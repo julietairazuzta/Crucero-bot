@@ -10,16 +10,22 @@ headers = {"User-Agent": "Mozilla/5.0"}
 html = requests.get(URL, headers=headers).text
 soup = BeautifulSoup(html, "html.parser")
 
-texto = soup.get_text()
-precios = re.findall(r"\$\s?\d{1,3}(?:\.\d{3})+", texto)
+mejor_precio = None
+mejor_link = URL
 
-if not precios:
-    raise Exception("No se encontraron precios en la página")
+for a in soup.find_all("a", href=True):
+    texto = a.get_text()
+    precios = re.findall(r"\$\s?\d{1,3}(?:\.\d{3})+", texto)
+    if precios:
+        valor = int(precios[0].replace("$","").replace(".",""))
+        if not mejor_precio or valor < mejor_precio:
+            mejor_precio = valor
+            mejor_link = a["href"]
 
-valores = [int(p.replace("$","").replace(".","")) for p in precios]
-precio_min = min(valores)
+if not mejor_precio:
+    raise Exception("No se encontró ningún precio")
 
-mensaje = f"🚢 Precio más barato hoy: ${precio_min}"
+mensaje = f"🚢 Precio más barato hoy: ${mejor_precio}\n🔗 {mejor_link}"
 
 requests.post(
     f"https://api.telegram.org/bot{TOKEN}/sendMessage",
