@@ -17,9 +17,11 @@ if not all_results:
 
 best = min(all_results, key=lambda x: x["price"])
 
-msg = f"""🚢 MEJOR CRUCERO HOY
+tag = "desde " if best["desde"] else ""
 
-💰 USD {best['price']}
+msg = f"""🚢 MEJOR CRUCERO 2027
+
+💰 {tag}{best['currency']} {best['price']}
 🛳 {best['title']}
 🌐 Fuente: {best['source']}
 🔗 {best['link']}
