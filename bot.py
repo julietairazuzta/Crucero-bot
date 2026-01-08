@@ -1,33 +1,29 @@
-import requests, os, re
-from bs4 import BeautifulSoup
+from sources.crucero_com_ar import get_crucero_com
+from sources.crucerum_com import get_crucerum
+from sources.cruisesheet_com import get_cruisesheet
+import requests, os
 
-TOKEN = os.environ["BOT_TOKEN"]
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-URL = "https://www.crucero.com.ar/cruceros-desde-buenos-aires-a-europa"
-headers = {"User-Agent": "Mozilla/5.0"}
+all_results = []
+all_results += get_crucero_com()
+all_results += get_crucerum()
+all_results += get_cruisesheet()
 
-html = requests.get(URL, headers=headers).text
-soup = BeautifulSoup(html, "html.parser")
+if not all_results:
+    print("No se encontraron cruceros válidos")
+    exit()
 
-mejor_precio = None
-mejor_link = URL
+best = min(all_results, key=lambda x: x["price"])
 
-for a in soup.find_all("a", href=True):
-    texto = a.get_text()
-    precios = re.findall(r"\$\s?\d{1,3}(?:\.\d{3})+", texto)
-    if precios:
-        valor = int(precios[0].replace("$","").replace(".",""))
-        if not mejor_precio or valor < mejor_precio:
-            mejor_precio = valor
-            mejor_link = a["href"]
+msg = f"""🚢 MEJOR CRUCERO HOY
 
-if not mejor_precio:
-    raise Exception("No se encontró ningún precio")
+💰 USD {best['price']}
+🛳 {best['title']}
+🌐 Fuente: {best['source']}
+🔗 {best['link']}
+"""
 
-mensaje = f"🚢 Precio más barato hoy: ${mejor_precio}\n🔗 {mejor_link}"
-
-requests.post(
-    f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-    data={"chat_id": CHAT_ID, "text": mensaje}
-)
+url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
